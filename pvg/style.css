@@ -1,0 +1,40 @@
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+#mousepress, #reset {
+  background-color:rgba(0, 0, 0, 1);
+  color: rgba(255,255, 255,0.67);
+  font-size: 1em;
+  padding: 0.5em;
+  font-family: sans-serif;
+  text-align: center;
+  width: 100vw;
+  position: fixed;
+  top: 0px;
+  cursor: pointer;
+}
+
+.fadeOut {
+  animation: fadeOut 1s;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+}
+
+@keyframes fadeOut {
+    from { transform: translateY(0); }
+    to   { transform: translateY(-3em); }
+}
+
+.fadeIn {
+  animation: fadeIn 1s;
+  animation-iteration-count: 1;
+  animation-fill-mode: forwards;
+}
+
+
+@keyframes fadeIn {
+    from { transform: translateY(-3em); }
+    to   { transform: translateY(0); }
+}
