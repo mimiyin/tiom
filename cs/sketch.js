@@ -12,9 +12,10 @@ const FRAMERATE = 30;
 let record;
 let y = 0;
 
+let cnv;
 
 function preload() {
-  loadJSON('../distances-27119.599999904633.json', calcDistances);
+  loadJSON('../yg.json', calcDistances);
 }
 
 // This is where your code goes
@@ -25,7 +26,7 @@ function calcDistances(data) {
 function setup() {
   pixelDensity(1);
   createCanvas(windowWidth, windowHeight);
-  record = createGraphics(width, distances.length * FRAMERATE * INTERVAL);
+  record = createGraphics(width, distances.length * INTERVAL);
   record.background(255);
   calcOff();
   noStroke();
@@ -38,7 +39,8 @@ function draw() {
   // Get next distance
   if (frameCount % INTERVAL == STARTFRAME) {
     d++;
-    d %= distances.length;
+    if(d >= distances.length-1) saveSequence();
+    //d %= distances.length;
     calcOff();
   }
 
@@ -59,10 +61,18 @@ function draw() {
   y++;
 }
 
-function keyPressed() {
-  if(keyCode == ENTER) {
-    saveCanvas(record, 'cs-' + millis(), 'jpg');
-  }
+function saveSequence() {
+//  if(keyCode == ENTER) {
+    console.log(record.width, record.height);
+    let cnv = createCanvas(record.width, record.height);
+    background('red');
+    image(record, 0, 0);
+    saveCanvas(cnv, 'cs-' + millis(), 'jpg');
+    noLoop();
+
+    // setTimeout(function(){
+    // }, 100);
+//  }
 }
 
 // Helper function to setup next move
