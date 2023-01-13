@@ -9,8 +9,8 @@ let bspeed = 1;
 let target;
 
 let targets = ['A', 'END'];
-let relationship = ['AT', 'STOP SHORT', 'JUST PAST', 'A DISTANCE FROM', 'A DISTANCE PAST'];
-let velocities = ['CRAWL', 'RECEDE', 'RUSH', 'VANISH', 'APPROACH', 'BACK AWAY', 'STAY'];
+let relationship = ['MEET', 'STOP SHORT', 'JUST PAST', 'A DISTANCE FROM', 'A DISTANCE PAST'];
+let velocities = ['CRAWL TO', 'RECEDE FROM', 'RUSH TO', 'VANISH', 'APPROACH', 'BACK AWAY', 'STAY'];
 
 
 const CRAWL = 1;
@@ -19,13 +19,13 @@ const TELEPORT = 100;
 
 let moves = [{
   target: 'A',
-  relationship: 'AT',
-  velocity: 'CRAWL'
+  relationship: 'MEET',
+  velocity: 'CRAWL TO'
 },
 {
   target: 'END',
   relationship: 'STOP SHORT',
-  velocity: 'RECEDE'
+  velocity: 'RECEDE FROM'
 },
 {
   target: 'A',
@@ -58,16 +58,26 @@ function keyPressed() {
       break;
     case LEFT_ARROW:
       facing = -1;
+      break;
+    case ENTER:
+      fullscreen(true);
+      break;
+    case ESCAPE:
+      fullscreen(false);
+      break;
+    case SHIFT:
+      location.reload();
+      break;
   }
 
 
   switch (key) {
     case 'm':
       m++;
-      if(m >= moves.length) return;
-    //  m%=moves.length;
+      m%=moves.length;
 
       let move = moves[m];
+      console.log("MOVE: ", move.velocity, move.relationship, move.target);
 
       // Calculate direction is 'TO'
       if (b == a) to = -bspeed/abs(bspeed);
@@ -75,13 +85,13 @@ function keyPressed() {
 
 
       switch (move.velocity) {
-        case 'CRAWL':
+        case 'CRAWL TO':
           bspeed = CRAWL * to;
           break;
-        case 'RECEDE':
+        case 'RECEDE FROM':
           bspeed = CRAWL * to;
           break;
-        case 'RUSH':
+        case 'RUSH TO':
           bspeed = TELEPORT * to;
           break;
         case 'VANISH':
@@ -119,7 +129,7 @@ function draw() {
   // Move the boundary, IF we've started
   if (m >= 0) {
     if(hasNotArrived()){
-      console.log("MOVING!");
+      //console.log("MOVING!");
       b += bspeed;
     }
     // Arrive at target!
@@ -166,7 +176,7 @@ function updateTarget(r, t) {
   let side = b  > target ? 1 : -1;
 
   switch (r) {
-    case 'AT':
+    case 'MEET':
       c = 0;
       break;
     case 'STOP SHORT':
