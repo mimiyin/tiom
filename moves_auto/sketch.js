@@ -1,4 +1,3 @@
-
 let a = 0;
 let b = 0;
 let m = -1;
@@ -8,7 +7,7 @@ let to = 1;
 let bspeed = 1;
 let target;
 
-let targets = ['A', 'END'];
+let targets = ['A', 'START', 'END'];
 let relationship = ['MEET', 'STOP SHORT', 'JUST PAST', 'A DISTANCE FROM', 'A DISTANCE PAST'];
 let velocities = ['CRAWL TO', 'RECEDE FROM', 'RUSH TO', 'VANISH', 'APPROACH', 'BACK AWAY', 'STAY'];
 
@@ -17,21 +16,49 @@ const CRAWL = 1;
 const WALK = 2;
 const TELEPORT = 100;
 
+let move;
+
+/*
+This does not account for relative relationships.
+When I want to be further back than I was.
+Or closer than I was.
+Nor does it allow for overlapping moves (e.g. following)
+And what happens when we run out of canvas?
+*/
+
 let moves = [{
-  target: 'A',
-  relationship: 'MEET',
-  velocity: 'CRAWL TO'
-},
-{
-  target: 'END',
-  relationship: 'STOP SHORT',
-  velocity: 'RECEDE FROM'
-},
-{
-  target: 'A',
-  relationship: 'A DISTANCE FROM',
-  velocity: 'APPROACH'
-}
+    target: 'A',
+    relationship: 'MEET',
+    velocity: 'APPROACH'
+  },
+  {
+    target: 'A',
+    relationship: 'JUST PAST',
+    velocity: 'APPROACH'
+  },
+  {
+    velocity: 'STAY'
+  },
+  {
+    target: 'A',
+    relationship: 'A DISTANCE FROM',
+    velocity: 'BACK AWAY'
+  },
+  {
+    target: 'A',
+    relationship: 'A DISTANCE FROM',
+    velocity: 'CRAWL TO'
+  },
+  {
+    target: 'A',
+    relationship: 'A DISTANCE FROM',
+    velocity: 'CRAWL TO'
+  },
+  {
+    target: 'A',
+    relationship: 'A DISTANCE FROM',
+    velocity: 'BACK AWAY'
+  },
 ];
 
 
@@ -46,11 +73,13 @@ function setup() {
   createCanvas(windowWidth, windowHeight);
   noStroke();
 
-  y = height/2;
+  y = height / 2;
 }
 
 function keyPressed() {
   console.log("POSITIONS", a, b);
+
+  let hasMoved = false;
 
   switch (keyCode) {
     case RIGHT_ARROW:
@@ -58,6 +87,15 @@ function keyPressed() {
       break;
     case LEFT_ARROW:
       facing = -1;
+      break;
+    case UP_ARROW:
+      console.log("UP");
+      a+=10;
+      hasMoved = true;
+      break;
+    case DOWN_ARROW:
+      a-=10;
+      hasMoved = true;
       break;
     case ENTER:
       fullscreen(true);
@@ -70,42 +108,57 @@ function keyPressed() {
       break;
   }
 
+  if(hasMoved) {
+    a = constrain(a, 0, width);
+    if(move && move.target == 'A') target = a;
+    console.log('A', a, 'Target', target);
+  }
+
 
   switch (key) {
     case 'm':
       m++;
-      m%=moves.length;
+      m %= moves.length;
 
-      let move = moves[m];
+      move = moves[m];
       console.log("MOVE: ", move.velocity, move.relationship, move.target);
 
       // Calculate direction is 'TO'
-      if (b == a) to = -bspeed/abs(bspeed);
+      // Was I going right or left? (+/-)
+      if (b == a) to = -bspeed / abs(bspeed);
+      // Go right to A or left to A
       else to = b < a ? 1 : -1;
 
+      // +to is towards A
+      // -to is away from A
 
       switch (move.velocity) {
         case 'CRAWL TO':
           bspeed = CRAWL * to;
           break;
         case 'RECEDE FROM':
-          bspeed = CRAWL * to;
+          bspeed = CRAWL * -to;
           break;
         case 'RUSH TO':
           bspeed = TELEPORT * to;
           break;
         case 'VANISH':
-          bspeed = TELEPORT * to;
+          bspeed = TELEPORT * -to;
           break;
         case 'APPROACH':
           bspeed = WALK * to;
           break;
         case 'BACK AWAY':
-          bspeed = WALK * to;
+          bspeed = WALK * -to;
+          break;
+        case 'STAY':
+          bspeed = 0;
+          move.target = 'B';
+          move.relationship = 'MEET';
           break;
       }
-      updateTarget(move.relationship, move. target);
       console.log("TO", a, b, bspeed, target);
+      updateTarget(move.relationship, move.target);
 
       //console.log('MOVE: ', m, move.velocity + ' ' + move.target, to, bspeed);
       break;
@@ -128,7 +181,7 @@ function draw() {
 
   // Move the boundary, IF we've started
   if (m >= 0) {
-    if(hasNotArrived()){
+    if (hasNotArrived()) {
       //console.log("MOVING!");
       b += bspeed;
     }
@@ -145,48 +198,46 @@ function draw() {
   fill(0);
   ellipse(a, y, 10, 10);
   stroke(0);
-  line(a, y, a + facing*10, y);
+  line(a, y, a + facing * 10, y);
 
 }
 
 function hasNotArrived() {
-  //console.log("TESTING", a - b, c + bspeed);
-  // Am I widening or closing the gap
-  // 100 - 100 ? 10 - 5
-  // 0, 1, 2, 3, 4,
-  // Approaching from the right
-  if(target == b) return false;
-  else if(to < 0) return target - b < bspeed;
-  // Approaching from the left
-  else return target - b > bspeed;
+
+  // Has arrived
+  if (target == b) return false;
+  // Approaching from either right or left
+  else return abs(target - b) > abs(bspeed);
 }
 
 function updateTarget(r, t) {
-
-
   switch (t) {
     case 'A':
       target = a;
       break;
+    case 'B':
+      target = b;
+      break;
     case 'END':
-      target = to > 0 ? width : 0;
+      bspeed < 0 ? 0 : width;
       break;
   }
-
-  let side = b  > target ? 1 : -1;
+  console.log('B', b, 'TARGET', target, 'A', a);
+  // Am I stopping to the left or right of the target?
+  let side = b < target ? 1 : -1;
 
   switch (r) {
     case 'MEET':
       c = 0;
       break;
     case 'STOP SHORT':
-      c = 5 * side;
+      c = 5 * -side;
       break;
     case 'JUST PAST':
       c = 5 * side;
       break;
     case 'A DISTANCE FROM':
-      c = width * 0.2 * side;
+      c = width * 0.2 * -side;
       break;
     case 'A DISTANCE PAST':
       c = width * 0.2 * side;
@@ -195,7 +246,7 @@ function updateTarget(r, t) {
 
 
   console.log("TARGET", target);
-  target+=c;
+  target += c;
   console.log("TARGET + C", target);
 
 }
