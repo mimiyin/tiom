@@ -8,8 +8,8 @@ let bspeed = 1;
 let target;
 
 let targets = ['A', 'START', 'END'];
-let relationship = ['MEET', 'STOP SHORT', 'JUST PAST', 'A DISTANCE FROM', 'A DISTANCE PAST'];
-let velocities = ['CRAWL TO', 'RECEDE FROM', 'RUSH TO', 'VANISH', 'APPROACH', 'BACK AWAY', 'STAY'];
+let relationship = ['MEET', 'STOP SHORT', 'JUST PAST', 'FURTHER', 'NEARER', 'A DISTANCE FROM', 'A DISTANCE PAST'];
+let velocities = ['CRAWL TO', 'RECEDE FROM', 'RUSH TO', 'VANISH', 'APPROACH', 'DEPART', 'STEP TO', 'BACK OFF', 'STAY'];
 
 
 const CRAWL = 1;
@@ -41,8 +41,7 @@ let moves = [{
   },
   {
     target: 'A',
-    relationship: 'A DISTANCE FROM',
-    velocity: 'BACK AWAY'
+    velocity: 'BACK OFF'
   },
   {
     target: 'A',
@@ -56,8 +55,7 @@ let moves = [{
   },
   {
     target: 'A',
-    relationship: 'A DISTANCE FROM',
-    velocity: 'BACK AWAY'
+    velocity: 'BACK OFF'
   },
 ];
 
@@ -90,11 +88,11 @@ function keyPressed() {
       break;
     case UP_ARROW:
       console.log("UP");
-      a+=10;
+      a += 10;
       hasMoved = true;
       break;
     case DOWN_ARROW:
-      a-=10;
+      a -= 10;
       hasMoved = true;
       break;
     case ENTER:
@@ -108,9 +106,9 @@ function keyPressed() {
       break;
   }
 
-  if(hasMoved) {
+  if (hasMoved) {
     a = constrain(a, 0, width);
-    if(move && move.target == 'A') target = a;
+    if (move && move.target == 'A') target = a;
     console.log('A', a, 'Target', target);
   }
 
@@ -125,7 +123,7 @@ function keyPressed() {
 
       // Calculate direction is 'TO'
       // Was I going right or left? (+/-)
-      if (b == a) to = -bspeed / abs(bspeed);
+      if (b == a) to = bspeed / abs(bspeed);
       // Go right to A or left to A
       else to = b < a ? 1 : -1;
 
@@ -148,8 +146,15 @@ function keyPressed() {
         case 'APPROACH':
           bspeed = WALK * to;
           break;
-        case 'BACK AWAY':
+        case 'BACK OFF':
+          // Move away from A
           bspeed = WALK * -to;
+          move.relationship = 'FURTHER';
+          break;
+        case 'STEP TO':
+          // Move away from A
+          bspeed = WALK * to;
+          move.relationship = 'CLOSER';
           break;
         case 'STAY':
           bspeed = 0;
@@ -211,6 +216,7 @@ function hasNotArrived() {
 }
 
 function updateTarget(r, t) {
+  console.log("What target?", t);
   switch (t) {
     case 'A':
       target = a;
@@ -224,7 +230,9 @@ function updateTarget(r, t) {
   }
   console.log('B', b, 'TARGET', target, 'A', a);
   // Am I stopping to the left or right of the target?
-  let side = b < target ? 1 : -1;
+  let side;
+  if(b == a) side = -facing;
+  else side = b < target ? 1 : -1;
 
   switch (r) {
     case 'MEET':
@@ -241,6 +249,12 @@ function updateTarget(r, t) {
       break;
     case 'A DISTANCE PAST':
       c = width * 0.2 * side;
+      break;
+    case 'FURTHER':
+      c = (abs(b-a) + 5) * -side;
+      break;
+    case 'CLOSER':
+      c = (abs(b-a) + 5) * side;
       break;
   }
 
