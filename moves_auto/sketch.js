@@ -146,6 +146,9 @@ function keyPressed() {
         case 'APPROACH':
           bspeed = WALK * to;
           break;
+        case 'DEPART':
+          bspeed = WALK * -to;
+          break;
         case 'BACK OFF':
           // Move away from A
           bspeed = WALK * -to;
@@ -230,9 +233,7 @@ function updateTarget(r, t) {
   }
   console.log('B', b, 'TARGET', target, 'A', a);
   // Am I stopping to the left or right of the target?
-  let side;
-  if(b == a) side = -facing;
-  else side = b < target ? 1 : -1;
+  let side = b <= target ? 1 : -1;
 
   switch (r) {
     case 'MEET':
@@ -251,10 +252,10 @@ function updateTarget(r, t) {
       c = width * 0.2 * side;
       break;
     case 'FURTHER':
-      c = (abs(b-a) + 5) * -side;
+      c = (abs(b - a) + 5) * -side;
       break;
     case 'CLOSER':
-      c = (abs(b-a) + 5) * side;
+      c = (abs(b - a) + 5) * side;
       break;
   }
 
