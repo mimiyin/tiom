@@ -3,18 +3,57 @@ let b = 0;
 let m = -1;
 let y;
 let facing = -1;
+let bfacing = 1;
 let to = 1;
 let bspeed = 1;
-let target;
-
-let targets = ['A', 'START', 'END'];
-let relationship = ['MEET', 'STOP SHORT', 'JUST PAST', 'FURTHER', 'NEARER', 'A DISTANCE FROM', 'A DISTANCE PAST'];
-let velocities = ['CRAWL TO', 'RECEDE FROM', 'RUSH TO', 'VANISH', 'APPROACH', 'DEPART', 'STEP TO', 'BACK OFF', 'STAY'];
-
+let target = window.innerWidth;
 
 const CRAWL = 1;
 const WALK = 2;
-const TELEPORT = 100;
+const RUN = 5;
+const WARP = 50;
+
+const STEP = window.innerWidth * 0.05;
+const LEAP = window.innerWidth * 0.2;
+
+let t = ['A', 'START', 'END'];
+let r = ['MEET', 'JUST SHORT', 'JUST PAST', 'A DISTANCE FROM', 'A DISTANCE PAST', 'COMPLETELY'];
+let v = {
+  // Differentiate when this is possible
+  'APPROACH': () => { return WALK },
+  'WITHDRAW': () => { return -WALK },
+  'CRAWL': () => { return CRAWL },
+  'RECEDE': () => { return -CRAWL },
+  'RUSH': () => { return RUN },
+  'RETREAT': () => { return -RUN },
+  'BACK INTO': () => { return WALK },
+  'PULL AWAY': () => { return -WALK },
+  'ATTACK': () => { return LEAP },
+  'BOLT': () => { return -LEAP },
+  'STEP UP': () => { return STEP },
+  'STEP BACK': () => { return -STEP },
+  //
+  'ENGULF': () => {
+    target = bfacing > 0 ? width : 0;
+    return WARP * (bfacing > 0 ? 1 : -1 );
+  },
+  'VANISH': () => {
+    target = bfacing < 0 ? width : 0;
+    return WARP * (bfacing < 0 ? 1 : -1 );
+  },
+  'STAY': () => {
+    target = b;
+    return 0 },
+  'TURN AROUND': () => {
+    bfacing *= -1;
+    target = b;
+    return 0;
+  },
+  'CONTINUE': (s) => {
+    target = b + (LEAP * (bspeed > 0 ? 1 : -1));
+    return bspeed;
+  },
+};
 
 let move;
 
@@ -27,44 +66,42 @@ And what happens when we run out of canvas?
 */
 
 let moves = [{
-    target: 'A',
-    relationship: 'MEET',
-    velocity: 'APPROACH'
+    v: 'ENGULF'
   },
   {
-    target: 'A',
-    relationship: 'JUST PAST',
-    velocity: 'APPROACH'
+    v: 'VANISH'
   },
   {
-    velocity: 'STAY'
+    t: 'A',
+    r: 'MEET',
+    v: 'APPROACH'
   },
   {
-    target: 'A',
-    velocity: 'BACK OFF'
+    v: 'CONTINUE'
   },
   {
-    target: 'A',
-    relationship: 'A DISTANCE FROM',
-    velocity: 'CRAWL TO'
+    v: 'TURN AROUND'
   },
   {
-    target: 'A',
-    relationship: 'A DISTANCE FROM',
-    velocity: 'CRAWL TO'
+    v: 'STAY'
   },
   {
-    target: 'A',
-    velocity: 'BACK OFF'
+    t : 'A',
+    r : 'A DISTANCE PAST',
+    v : 'APPROACH'
+  },
+  {
+    t : 'A',
+    r : 'JUST SHORT',
+    v: 'BACK INTO'
+  },
+  {
+    t: 'START',
+    r: 'COMPLETELY',
+    v: 'WITHDRAW'
   },
 ];
 
-
-
-
-// function preload() {
-//   loadJSON('../yg.json', calcDistances);
-// }
 
 function setup() {
   pixelDensity(1);
@@ -72,6 +109,52 @@ function setup() {
   noStroke();
 
   y = height / 2;
+}
+
+function draw() {
+  background(255);
+
+  // Get next distance
+
+
+  // Move the boundary, IF we've started
+  if (m >= 0) {
+    if (hasNotArrived()) {
+      console.log("MOVING AT: ", bspeed);
+      b += bspeed;
+    }
+    // Arrive at target!
+    else b = target;
+  }
+  //console.log("X", x);
+
+  // Draw everything
+  noStroke();
+  fill(220);
+
+
+  // Flip the facing of b
+  if (bfacing > 0) rect(0, 0, b, height);
+  else rect(b, 0, width - b, height);
+
+  fill(0);
+  ellipse(a, y, 10, 10);
+  stroke(0);
+  line(a, y, a + facing * 10, y);
+
+}
+
+function hasNotArrived() {
+
+  // Has arrived
+  if (target == b || b < 0 || b > width) return false;
+  // Approaching from either right or left
+  else return abs(target - b) >= abs(bspeed);
+}
+
+// INTERACTIVE ELEMENTS
+function mousePressed() {
+  a = mouseX;
 }
 
 function keyPressed() {
@@ -119,54 +202,32 @@ function keyPressed() {
       m %= moves.length;
 
       move = moves[m];
-      console.log("MOVE: ", move.velocity, move.relationship, move.target);
+      console.log("MOVE: ", move.v, move.r, move.t);
 
-      // Calculate direction is 'TO'
-      // Was I going right or left? (+/-)
-      if (b == a) to = bspeed / abs(bspeed);
-      // Go right to A or left to A
-      else to = b < a ? 1 : -1;
+      switch (move.t) {
+        case 'A':
+          target = a;
+          break;
+        case 'START':
+          target = 0;
+          break;
+        case 'END':
+          target = width;
+          break;
+      }
+
+      console.log("REL POS", b, target);
+
+      // Which way is towards the target?
+      to = b <= target ? 1 : -1;
+
 
       // +to is towards A
       // -to is away from A
+      bspeed = v[move.v]() * to;
+      updateTarget();
 
-      switch (move.velocity) {
-        case 'CRAWL TO':
-          bspeed = CRAWL * to;
-          break;
-        case 'RECEDE FROM':
-          bspeed = CRAWL * -to;
-          break;
-        case 'RUSH TO':
-          bspeed = TELEPORT * to;
-          break;
-        case 'VANISH':
-          bspeed = TELEPORT * -to;
-          break;
-        case 'APPROACH':
-          bspeed = WALK * to;
-          break;
-        case 'DEPART':
-          bspeed = WALK * -to;
-          break;
-        case 'BACK OFF':
-          // Move away from A
-          bspeed = WALK * -to;
-          move.relationship = 'FURTHER';
-          break;
-        case 'STEP TO':
-          // Move away from A
-          bspeed = WALK * to;
-          move.relationship = 'CLOSER';
-          break;
-        case 'STAY':
-          bspeed = 0;
-          move.target = 'B';
-          move.relationship = 'MEET';
-          break;
-      }
-      console.log("TO", a, b, bspeed, target);
-      updateTarget(move.relationship, move.target);
+      console.log("A", a, "B", b, "TO", to, "SPEED", bspeed, "TARGET", target);
 
       //console.log('MOVE: ', m, move.velocity + ' ' + move.target, to, bspeed);
       break;
@@ -177,91 +238,33 @@ function keyPressed() {
 
 }
 
-function mousePressed() {
-  a = mouseX;
-}
-
-function draw() {
-  background(255);
-
-  // Get next distance
-
-
-  // Move the boundary, IF we've started
-  if (m >= 0) {
-    if (hasNotArrived()) {
-      //console.log("MOVING!");
-      b += bspeed;
-    }
-    // Arrive at target!
-    else b = target;
-  }
-  //console.log("X", x);
-
-  // Draw everything
-  noStroke();
-  fill(220);
-  rect(0, 0, b, height);
-
-  fill(0);
-  ellipse(a, y, 10, 10);
-  stroke(0);
-  line(a, y, a + facing * 10, y);
-
-}
-
-function hasNotArrived() {
-
-  // Has arrived
-  if (target == b) return false;
-  // Approaching from either right or left
-  else return abs(target - b) > abs(bspeed);
-}
-
-function updateTarget(r, t) {
-  console.log("What target?", t);
-  switch (t) {
-    case 'A':
-      target = a;
-      break;
-    case 'B':
-      target = b;
-      break;
-    case 'END':
-      bspeed < 0 ? 0 : width;
-      break;
-  }
-  console.log('B', b, 'TARGET', target, 'A', a);
+function updateTarget() {
   // Am I stopping to the left or right of the target?
-  let side = b <= target ? 1 : -1;
 
-  switch (r) {
-    case 'MEET':
-      c = 0;
-      break;
-    case 'STOP SHORT':
-      c = 5 * -side;
+  let side = b <= target ? 1 : -1;
+  let c = 0;
+
+  switch (move.r) {
+    case 'JUST SHORT':
+      c = STEP * -side;
       break;
     case 'JUST PAST':
-      c = 5 * side;
+      c = STEP * side;
       break;
     case 'A DISTANCE FROM':
-      c = width * 0.2 * -side;
+      c = LEAP * -side;
       break;
     case 'A DISTANCE PAST':
-      c = width * 0.2 * side;
+      c = LEAP * side;
       break;
-    case 'FURTHER':
-      c = (abs(b - a) + 5) * -side;
-      break;
-    case 'CLOSER':
-      c = (abs(b - a) + 5) * side;
+    case 'COMPLETELY':
+      // going left
+      console.log("TO", to);
+      c = bspeed > 0 ? width - target : -target;
       break;
   }
 
 
-  console.log("TARGET", target);
+  console.log("TARGET", target, "C", c, "SIDE", side);
   target += c;
-  console.log("TARGET + C", target);
-
 }

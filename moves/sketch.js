@@ -1,18 +1,17 @@
 let a = 0;
-let b = 0;
+let b = 100;
 let m = -1;
 let y;
 let facing = -1;
 let to = 1;
-let bspeed = 1;
+let bspeed = -1;
 let bdir = 1;
 
 let go = false;
 
-const SPEEDS = [1, 10, 100];
-
-
-
+const CRAWL = 1;
+const WALK = 5;
+const RUN = 20;
 
 // function preload() {
 //   loadJSON('../yg.json', calcDistances);
@@ -44,17 +43,30 @@ function keyPressed() {
       bdir *= -1;
       break;
     case '1':
-      bspeed = 1;
+      pbspeed = bspeed;
+      bspeed = CRAWL;
+      toggle();
       break;
     case '2':
-      bspeed = 10;
+      pbspeed = bspeed;
+      bspeed = WALK;
+      toggle();
       break;
     case '3':
-      bspeed = 100;
+      pbspeed = bspeed;
+      bspeed = RUN;
+      toggle();
       break;
-
+    case '4':
+      b = a;
+      go = false;
+      break;
   }
 
+}
+
+function toggle() {
+  if(bspeed == pbspeed || !go) go = !go;
 }
 
 function mousePressed() {
@@ -68,16 +80,22 @@ function draw() {
   if(keyIsPressed) {
     switch (keyCode) {
       case UP_ARROW:
-        a+=2;
+        a+=CRAWL;
         break;
       case DOWN_ARROW:
-        a-=2;
+        a-=CRAWL;
         break;
       case RIGHT_ARROW:
-        a++;
+        a+=WALK;
         break;
       case LEFT_ARROW:
-        a--;
+        a-=WALK;
+        break;
+      case SHIFT:
+        a+=RUN;
+        break;
+      case '/':
+        a-=RUN;
         break;
       }
   }
@@ -87,9 +105,12 @@ function draw() {
   fill(220);
   rect(0, 0, b, height);
 
-  fill(0);
-  ellipse(a, y, 10, 10);
-  stroke(0);
-  line(a, y, a + facing * 10, y);
+  stroke('red');
+  line(mouseX, 0, mouseX, height);
+
+  // fill(0);
+  // ellipse(a, y, 10, 10);
+  // stroke(0);
+  // line(a, y, a + facing * 10, y);
 
 }
